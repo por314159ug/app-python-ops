@@ -17,25 +17,31 @@ pipeline {
                 }
             }
         }
+        
         stage('Clean Up Old Container') {
             steps {
                 script {
                     def containerId = bat(
-                        script: "FOR /F \"tokens=*\" %%i IN ('docker ps -q --filter \"ancestor=%DOCKER_IMAGE%\" --filter \"publish=5000\"') DO @echo %%i",
+                        script: """
+                        @echo off
+                        for /f "tokens=1" %%i in ('docker ps --filter "publish=5000" --format "{{.ID}}"') do (
+                            docker stop %%i
+                            docker rm %%i
+                            echo %%i
+                        )
+                        """,
                         returnStdout: true
                     ).trim()
         
                     if (containerId) {
-                        echo "Stopping and removing container: ${containerId}"
-                        bat "docker stop ${containerId}"
-                        bat "docker rm ${containerId}"
+                        echo "Stopped and removed container: ${containerId}"
                     } else {
-                        echo "No container found using image ${env.DOCKER_IMAGE} and port 5000"
+                        echo "No container found on port 5000"
                     }
                 }
             }
         }
-        
+
         stage('Run Docker Container') {
             steps {
                 script {
