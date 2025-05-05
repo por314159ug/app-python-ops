@@ -18,27 +18,18 @@ pipeline {
             }
         }
         
-        stage('Clean Up Old Container') {
+       stage('Clean Up Old Container') {
             steps {
-                script {
-                    def containerId = bat(
-                        script: """
-                        @echo off
-                        for /f "tokens=1" %%i in ('docker ps --filter "publish=5000" --format "{{.ID}}"') do (
-                            docker stop %%i
-                            docker rm %%i
-                            echo %%i
-                        )
-                        """,
-                        returnStdout: true
-                    ).trim()
-        
-                    if (containerId) {
-                        echo "Stopped and removed container: ${containerId}"
-                    } else {
-                        echo "No container found on port 5000"
-                    }
+                powershell '''
+                $container = docker ps --filter "publish=5000" --format "{{.ID}}"
+                if ($container) {
+                    Write-Output "Stopping container: $container"
+                    docker stop $container
+                    docker rm $container
+                } else {
+                    Write-Output "No container found on port 5000"
                 }
+                '''
             }
         }
 
